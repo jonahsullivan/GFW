@@ -15,7 +15,7 @@ lat_max2 = 20
 lon_min2 = -180
 lon_max2 = -120
 
-create_table = True
+create_table = False
 
 # create a list of files
 file_list = []
@@ -47,14 +47,8 @@ if create_table:
         vessel_hours double precision,
         fishing_hours double precision,
         mmsi_present integer
-    );"""
-
-    cur = conn.cursor()
-    cur.execute(create_table_command)
-    cur.close()
-    conn.commit()
-
-    add_geometry_command = """
+    );
+    
     SELECT AddGeometryColumn 
     (
         'public',
@@ -63,19 +57,14 @@ if create_table:
         4326,
         'POINT'
         ,2
-    );"""
-
-    cur = conn.cursor()
-    cur.execute(add_geometry_command)
-    cur.close()
-    conn.commit()
-
-    add_pkey_command = """
+    );
+    
     ALTER TABLE effort ADD PRIMARY KEY(date, flag, geartype, geom)
-    ;"""
+    ;
+    """
 
     cur = conn.cursor()
-    cur.execute(add_pkey_command)
+    cur.execute(create_table_command)
     cur.close()
     conn.commit()
 

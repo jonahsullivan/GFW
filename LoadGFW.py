@@ -15,12 +15,13 @@ lat_max2 = 20
 lon_min2 = -180
 lon_max2 = -120
 
-create_table = False
+create_table = True
 
 # create a list of files
 file_list = []
 for f in os.listdir(inFolder):
     file_list.append(os.path.join(inFolder, f))
+file_list.sort()
 
 # posgresql connection parameters
 conn = psycopg2.connect(host='localhost',
@@ -45,13 +46,36 @@ if create_table:
         geartype character varying(25) COLLATE pg_catalog."default",
         vessel_hours double precision,
         fishing_hours double precision,
-        mmsi_present integer,
-        geom geometry NOT NULL,
-        CONSTRAINT effort_pkey PRIMARY KEY (date, flag, geartype, geom)
+        mmsi_present integer
     );"""
 
     cur = conn.cursor()
     cur.execute(create_table_command)
+    cur.close()
+    conn.commit()
+
+    add_geometry_command = """
+    SELECT AddGeometryColumn 
+    (
+        'public',
+        'effort',
+        'geom',
+        4326,
+        'POINT'
+        ,2
+    );"""
+
+    cur = conn.cursor()
+    cur.execute(add_geometry_command)
+    cur.close()
+    conn.commit()
+
+    add_pkey_command = """
+    ALTER TABLE effort ADD PRIMARY KEY(date, flag, geartype, geom)
+    ;"""
+
+    cur = conn.cursor()
+    cur.execute(add_pkey_command)
     cur.close()
     conn.commit()
 
@@ -75,7 +99,7 @@ for f in file_list:
     if d in [e[0] for e in dates]:
         print("skipping " + str(d))
     else:
-        print(f)
+        print(os.path.basename(f))
         entries = []
         with open(f, 'r') as csvfile:
             csvfile.readline()  # skip header
@@ -102,10 +126,11 @@ for f in file_list:
                             entry)
             except psycopg2.IntegrityError:
                 conn.rollback()
-            else:
-                conn.commit()
+        conn.commit()
     files_done += 1
     if files_done % 100 == 0:
+        print("\n")
         print(str(int(files_done / len(file_list) * 100)) + "% done")
+        print("\n")
 cur.close()
 conn.close()

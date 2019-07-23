@@ -21,6 +21,7 @@ create_table = False
 file_list = []
 for f in os.listdir(inFolder):
     file_list.append(os.path.join(inFolder, f))
+file_list.sort()
 
 # posgresql connection parameters
 conn = psycopg2.connect(host='localhost',
@@ -71,9 +72,8 @@ cur = conn.cursor()
 for f in file_list:
     d = os.path.basename(f)
     d = datetime.date(int(d[0:4]), int(d[5:7]), int(d[8:10]))
-    print(d)
-    if d in dates:
-        print("skipping " + d)
+    if d in [e[0] for e in dates]:
+        print("skipping " + str(d))
     else:
         print(f)
         entries = []

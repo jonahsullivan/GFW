@@ -21,7 +21,6 @@ create_table = False
 file_list = []
 for f in os.listdir(inFolder):
     file_list.append(os.path.join(inFolder, f))
-file_list.sort()
 
 # posgresql connection parameters
 conn = psycopg2.connect(host='localhost',
@@ -69,6 +68,7 @@ print("found " + str(len(dates)) + " dates")
 
 # loop through csvs adding data
 cur = conn.cursor()
+files_done = 0
 for f in file_list:
     d = os.path.basename(f)
     d = datetime.date(int(d[0:4]), int(d[5:7]), int(d[8:10]))
@@ -104,5 +104,8 @@ for f in file_list:
                 conn.rollback()
             else:
                 conn.commit()
+    files_done += 1
+    if files_done % 100 == 0:
+        print(str(int(files_done / len(file_list) * 100)) + "% done")
 cur.close()
 conn.close()
